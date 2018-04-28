@@ -425,7 +425,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Material Design Icon"
-                app:met_iconLeft="@drawable/ic_phone"
+                app:met_iconLeft="@mipmap/ic_phone"
                 app:met_iconPadding="0dp"
                 app:met_maxCharacters="5" />
 
