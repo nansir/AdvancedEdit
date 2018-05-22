@@ -279,7 +279,7 @@ public class MaterialEditText extends AppCompatEditText {
         }
 
         iconSize = getPixel(32);
-        iconOuterWidth = getPixel(48);
+        iconOuterWidth = getPixel(20);
         iconOuterHeight = getPixel(32);
 
         bottomSpacing = getResources().getDimensionPixelSize(R.dimen.inner_components_spacing);
@@ -730,31 +730,35 @@ public class MaterialEditText extends AppCompatEditText {
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
 
-        int startX = getScrollX() + (iconLeftBitmaps == null ? 0 : (iconOuterWidth + iconPadding)) + getPaddingLeft();
-        int endX = getScrollX() + (iconRightBitmaps == null ? getWidth() : getWidth() - iconOuterWidth - iconPadding) - getPaddingRight();
+        int startX = iconOuterWidth + iconPadding + getPaddingLeft();
+
+        int endX = getWidth();
+
         int lineStartY = getScrollY() + getHeight() - getPaddingBottom();
 
-        // draw the icon(s)
+        // draw the icon(s)绘制图标
         paint.setAlpha(255);
         if (iconLeftBitmaps != null) {
             Bitmap icon = iconLeftBitmaps[!isInternalValid() ? 3 : !isEnabled() ? 2 : hasFocus() ? 1 : 0];
-            int iconLeft = startX - iconPadding - iconOuterWidth + (iconOuterWidth - icon.getWidth()) / 2;
             int iconTop = lineStartY + bottomSpacing - iconOuterHeight + (iconOuterHeight - icon.getHeight()) / 2;
-            canvas.drawBitmap(icon, iconLeft, iconTop, paint);
+            canvas.drawBitmap(icon, 0, iconTop, paint);
         }
+
         if (iconRightBitmaps != null) {
             Bitmap icon = iconRightBitmaps[!isInternalValid() ? 3 : !isEnabled() ? 2 : hasFocus() ? 1 : 0];
-            int iconRight = endX + iconPadding + (iconOuterWidth - icon.getWidth()) / 2;
+            int iconRight = endX + iconPadding - iconOuterWidth - icon.getWidth();
             int iconTop = lineStartY + bottomSpacing - iconOuterHeight + (iconOuterHeight - icon.getHeight()) / 2;
             canvas.drawBitmap(icon, iconRight, iconTop, paint);
         }
 
-        // draw the clear button
+        // draw the clear button画出清除的按钮
         if (hasFocus() && showClearButton && !TextUtils.isEmpty(getText()) && isEnabled()) {
             paint.setAlpha(255);
             int buttonLeft;
             if (isRTL()) {
                 buttonLeft = startX;
+            } else if (iconRightBitmaps != null) {
+                buttonLeft = endX - iconOuterWidth - iconPadding - iconOuterWidth;
             } else {
                 buttonLeft = endX - iconOuterWidth;
             }
@@ -764,24 +768,24 @@ public class MaterialEditText extends AppCompatEditText {
             canvas.drawBitmap(clearButtonBitmap, buttonLeft, iconTop, paint);
         }
 
-        // draw the underline
+        // draw the underline画下划线
         if (!hideUnderline) {
             lineStartY += bottomSpacing;
             if (!isInternalValid()) { // not valid
                 paint.setColor(errorColor);
-                canvas.drawRect(startX, lineStartY, endX, lineStartY + getPixel(2), paint);
+                canvas.drawRect(0, lineStartY, endX, lineStartY + getPixel(1), paint);
             } else if (!isEnabled()) { // disabled
                 paint.setColor(underlineColor != -1 ? underlineColor : baseColor & 0x00ffffff | 0x44000000);
                 float interval = getPixel(1);
                 for (float xOffset = 0; xOffset < getWidth(); xOffset += interval * 3) {
-                    canvas.drawRect(startX + xOffset, lineStartY, startX + xOffset + interval, lineStartY + getPixel(1), paint);
+                    canvas.drawRect(0 + xOffset, lineStartY, startX + xOffset + interval, lineStartY + getPixel(1), paint);
                 }
             } else if (hasFocus()) { // focused
                 paint.setColor(primaryColor);
-                canvas.drawRect(startX, lineStartY, endX, lineStartY + getPixel(2), paint);
+                canvas.drawRect(0, lineStartY, endX, lineStartY + getPixel(1), paint);
             } else { // normal
                 paint.setColor(underlineColor != -1 ? underlineColor : baseColor & 0x00ffffff | 0x1E000000);
-                canvas.drawRect(startX, lineStartY, endX, lineStartY + getPixel(1), paint);
+                canvas.drawRect(0, lineStartY, endX, lineStartY + getPixel(1), paint);
             }
         }
 
@@ -790,58 +794,58 @@ public class MaterialEditText extends AppCompatEditText {
         float relativeHeight = -textMetrics.ascent - textMetrics.descent;
         float bottomTextPadding = bottomTextSize + textMetrics.ascent + textMetrics.descent;
 
-        // draw the characters counter
+        // draw the characters counter画出字符计数器
         if ((hasFocus() && hasCharactersCounter()) || !isCharactersCountValid()) {
             textPaint.setColor(isCharactersCountValid() ? (baseColor & 0x00ffffff | 0x44000000) : errorColor);
             String charactersCounterText = getCharactersCounterText();
             canvas.drawText(charactersCounterText, isRTL() ? startX : endX - textPaint.measureText(charactersCounterText), lineStartY + bottomSpacing + relativeHeight, textPaint);
         }
 
-        // draw the bottom text
+        // draw the bottom text画下面的文本
         if (textLayout != null) {
             if (tempErrorText != null || ((helperTextAlwaysShown || hasFocus()) && !TextUtils.isEmpty(helperText))) { // error text or helper text
                 textPaint.setColor(tempErrorText != null ? errorColor : helperTextColor != -1 ? helperTextColor : (baseColor & 0x00ffffff | 0x44000000));
                 canvas.save();
                 if (isRTL()) {
-                    canvas.translate(endX - textLayout.getWidth(), lineStartY + bottomSpacing - bottomTextPadding);
+                    canvas.translate(iconOuterWidth + iconPadding, lineStartY + bottomSpacing - bottomTextPadding);
                 } else {
-                    canvas.translate(startX + getBottomTextLeftOffset(), lineStartY + bottomSpacing - bottomTextPadding);
+                    canvas.translate(iconOuterWidth + iconPadding, lineStartY + bottomSpacing - bottomTextPadding);
                 }
                 textLayout.draw(canvas);
                 canvas.restore();
             }
         }
 
-        // draw the floating label
+        // draw the floating label画出浮动标签
         if (floatingLabelEnabled && !TextUtils.isEmpty(floatingLabelText)) {
             textPaint.setTextSize(floatingLabelTextSize);
-            // calculate the text color
+            // calculate the text color计算文本颜色
             textPaint.setColor((Integer) focusEvaluator.evaluate(focusFraction * (isEnabled() ? 1 : 0), floatingLabelTextColor != -1 ? floatingLabelTextColor : (baseColor & 0x00ffffff | 0x44000000), primaryColor));
 
-            // calculate the horizontal position
+            // calculate the horizontal position计算水平位置
             float floatingLabelWidth = textPaint.measureText(floatingLabelText.toString());
             int floatingLabelStartX;
             if ((getGravity() & Gravity.RIGHT) == Gravity.RIGHT || isRTL()) {
                 floatingLabelStartX = (int) (endX - floatingLabelWidth);
             } else if ((getGravity() & Gravity.LEFT) == Gravity.LEFT) {
-                floatingLabelStartX = startX;
+                floatingLabelStartX = iconOuterWidth + iconPadding;
             } else {
                 floatingLabelStartX = startX + (int) (getInnerPaddingLeft() + (getWidth() - getInnerPaddingLeft() - getInnerPaddingRight() - floatingLabelWidth) / 2);
             }
 
-            // calculate the vertical position
+            // calculate the vertical position计算垂直位置
             int distance = floatingLabelPadding;
             int floatingLabelStartY = (int) (innerPaddingTop + floatingLabelTextSize + floatingLabelPadding - distance * (floatingLabelAlwaysShown ? 1 : floatingLabelFraction) + getScrollY());
 
-            // calculate the alpha
-            int alpha = ((int) ((floatingLabelAlwaysShown ? 1 : floatingLabelFraction) * 0xff * (0.74f * focusFraction * (isEnabled() ? 1 : 0) + 0.26f) * (floatingLabelTextColor != -1 ? 1 : Color.alpha(floatingLabelTextColor) / 256f)));
+            // calculate the alpha计算出α
+            int alpha = ((int) ((floatingLabelAlwaysShown ? 1 : floatingLabelFraction) * 0xff * (0.84f * focusFraction * (isEnabled() ? 1 : 0) + 0.66f) * (floatingLabelTextColor != -1 ? 1 : Color.alpha(floatingLabelTextColor) / 256f)));
             textPaint.setAlpha(alpha);
 
-            // draw the floating label
+            // draw the floating label画出浮动标签
             canvas.drawText(floatingLabelText.toString(), floatingLabelStartX, floatingLabelStartY, textPaint);
         }
 
-        // draw the bottom ellipsis
+        // draw the bottom ellipsis画下面省略
         if (hasFocus() && singleLineEllipsis && getScrollX() != 0) {
             paint.setColor(isInternalValid() ? primaryColor : errorColor);
             float startY = lineStartY + bottomSpacing;
@@ -857,7 +861,7 @@ public class MaterialEditText extends AppCompatEditText {
             canvas.drawCircle(ellipsisStartX + signum * bottomEllipsisSize * 9 / 2, startY + bottomEllipsisSize / 2, bottomEllipsisSize / 2, paint);
         }
 
-        // draw the original things
+        // draw the original things画出原始的东西
         super.onDraw(canvas);
     }
 
@@ -928,6 +932,7 @@ public class MaterialEditText extends AppCompatEditText {
         return (x >= buttonLeft && x < buttonLeft + iconOuterWidth && y >= buttonTop && y < buttonTop + iconOuterHeight);
     }
 
+
     /**
      * only used to draw the bottom line
      */
@@ -959,10 +964,6 @@ public class MaterialEditText extends AppCompatEditText {
         return text;
     }
 
-    private int getBottomTextLeftOffset() {
-        return isRTL() ? getCharactersCounterWidth() : getBottomEllipsisWidth();
-    }
-
     /**
      * get inner left padding, not the real paddingLeft
      */
@@ -980,6 +981,10 @@ public class MaterialEditText extends AppCompatEditText {
     private int checkLength(CharSequence text) {
         if (lengthChecker == null) return text.length();
         return lengthChecker.getLength(text);
+    }
+
+    private int getBottomTextLeftOffset() {
+        return isRTL() ? getCharactersCounterWidth() : getBottomEllipsisWidth();
     }
 
     private int getCharactersCounterWidth() {
@@ -1101,7 +1106,6 @@ public class MaterialEditText extends AppCompatEditText {
         if (baseColor != color) {
             baseColor = color;
         }
-
         initText();
 
         postInvalidate();
